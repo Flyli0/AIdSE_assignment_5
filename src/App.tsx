@@ -1,6 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import { CheckCircle2, Circle, Clock, Plus, Pencil, X, AlertCircle } from 'lucide-react';
 import type { Task } from './types';
+import {
+  addTask,
+  deleteTask as deleteTaskOperation,
+  getActiveTasks,
+  getFinishedTasks,
+  setTaskFinished,
+} from './taskOperations';
 
 const STORAGE_KEY = 'task-tracker:tasks';
 
@@ -74,14 +81,11 @@ export default function App() {
   }, [tasks]);
 
   const activeTasks = useMemo(
-    () =>
-      [...tasks]
-        .filter((t) => !t.finished)
-        .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()),
+    () => getActiveTasks(tasks),
     [tasks],
   );
   const finishedTasks = useMemo(
-    () => [...tasks].filter((t) => t.finished).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    () => getFinishedTasks(tasks),
     [tasks],
   );
 
@@ -97,21 +101,21 @@ export default function App() {
         finished: false,
         createdAt: new Date().toISOString(),
       };
-      setTasks((prev) => [...prev, newTask]);
+      setTasks((prev) => addTask(prev, newTask));
     }
     closeModal();
   };
 
   const markFinished = (id: string) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, finished: true } : t)));
+    setTasks((prev) => setTaskFinished(prev, id, true));
   };
 
   const markActive = (id: string) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, finished: false } : t)));
+    setTasks((prev) => setTaskFinished(prev, id, false));
   };
 
   const deleteTask = (id: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+    setTasks((prev) => deleteTaskOperation(prev, id));
   };
 
   const openCreate = () => {
