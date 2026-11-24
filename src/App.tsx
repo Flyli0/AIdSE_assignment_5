@@ -6,6 +6,7 @@ import {
   deleteTask as deleteTaskOperation,
   getActiveTasks,
   getFinishedTasks,
+  sanitizeTasks,
   setTaskFinished,
 } from './taskOperations';
 
@@ -15,8 +16,7 @@ function loadTasks(): Task[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as Task[];
-    return Array.isArray(parsed) ? parsed : [];
+    return sanitizeTasks(JSON.parse(raw));
   } catch {
     return [];
   }

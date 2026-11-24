@@ -5,6 +5,7 @@ import {
   deleteTask,
   getActiveTasks,
   getFinishedTasks,
+  sanitizeTasks,
   setTaskFinished,
 } from './taskOperations';
 
@@ -75,5 +76,30 @@ describe('task operations', () => {
 
     expect(getActiveTasks(result)).toContainEqual(addedTask);
     expect(getActiveTasks(result)).toHaveLength(3);
+  });
+
+  it('updates only the first task when duplicate IDs are encountered', () => {
+    const duplicate = { ...secondTask, id: firstTask.id };
+    const result = setTaskFinished([firstTask, duplicate], firstTask.id, true);
+
+    expect(result[0].finished).toBe(true);
+    expect(result[1].finished).toBe(false);
+  });
+
+  it('rejects duplicate task IDs and sanitizes malformed persisted entries', () => {
+    const duplicateIdTask = { ...secondTask, id: firstTask.id };
+    const result = addTask([firstTask], duplicateIdTask);
+
+    expect(result).toEqual([firstTask]);
+    expect(result).toHaveLength(1);
+
+    const malformed = [
+      firstTask,
+      { ...secondTask, id: firstTask.id },
+      { id: 'bad', title: '', deadline: 'invalid', finished: false, createdAt: 'invalid' },
+      null,
+    ];
+
+    expect(sanitizeTasks(malformed)).toEqual([firstTask]);
   });
 });
