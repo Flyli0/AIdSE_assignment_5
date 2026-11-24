@@ -25,6 +25,27 @@ const nowDatetimeLocal = (): string => {
   return d.toISOString().slice(0, 16);
 };
 
+const toDatetimeLocal = (iso: string): string => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+};
+
+const validateDeadline = (
+  value: string,
+  now: number = Date.now(),
+): { deadlineDate: Date } | { error: string } => {
+  const deadlineDate = new Date(value);
+  if (Number.isNaN(deadlineDate.getTime())) {
+    return { error: 'Please provide a valid deadline.' };
+  }
+  if (deadlineDate.getTime() <= now) {
+    return { error: 'Deadline must be after the current time.' };
+  }
+  return { deadlineDate };
+};
+
 const formatDeadline = (iso: string): string => {
   const d = new Date(iso);
   return d.toLocaleString(undefined, {
@@ -296,7 +317,9 @@ interface TaskModalProps {
 function TaskModal({ task, onClose, onSave }: TaskModalProps) {
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
-  const [deadline, setDeadline] = useState(task?.deadline?.slice(0, 16) ?? nowDatetimeLocal());
+  const [deadline, setDeadline] = useState(
+    task ? toDatetimeLocal(task.deadline) : nowDatetimeLocal(),
+  );
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -306,19 +329,15 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
       setError('Title is required.');
       return;
     }
-    const deadlineDate = new Date(deadline);
-    if (Number.isNaN(deadlineDate.getTime())) {
-      setError('Please provide a valid deadline.');
-      return;
-    }
-    if (deadlineDate.getTime() <= Date.now()) {
-      setError('Deadline must be after the current time.');
+    const deadlineValidation = validateDeadline(deadline);
+    if ('error' in deadlineValidation) {
+      setError(deadlineValidation.error);
       return;
     }
     onSave({
       title: trimmed,
       description: description.trim() || undefined,
-      deadline: deadlineDate.toISOString(),
+      deadline: deadlineValidation.deadlineDate.toISOString(),
     });
   };
 
